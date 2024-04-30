@@ -1,7 +1,5 @@
 package blockchain
 
-import "math/big"
-
 type Block struct {
 	Header       Header
 	Transactions []Transaction
@@ -18,11 +16,4 @@ type Header struct {
 	timestamp       uint64
 	extraData       []byte
 	nonce           uint64
-}
-
-type Transaction struct {
-	to      [20]byte
-	amount  uint64
-	data    []byte
-	v, r, s *big.Int
 }
