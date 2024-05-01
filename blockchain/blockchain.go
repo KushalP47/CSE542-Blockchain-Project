@@ -5,13 +5,12 @@ import (
 )
 
 type Blockchain struct {
-	// blocks is a list of blocks in the blockchain
-	blocks []*Block
+	lastBlockNumber uint64
 	// blockDB is the database for blocks
+	// key-> block number, value-> block
 	blockDB *database.Database
-	// accountState is the state of all accounts in the blockchain
-	accounts []*Account
 	// accountsDB is the database for accounts
+	// key-> account address, value-> account
 	accountsDB *database.Database
 	// txnPool is the pool of transactions
 	txnPool []*Transaction

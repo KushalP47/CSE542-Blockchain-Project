@@ -18,7 +18,7 @@ func (db *Database) InitDB(dir string) (*badger.DB, error) {
 	return db.DB, err
 }
 
-func (db *Database) Read(key string) ([]byte, error) {
+func (db *Database) Read(key []byte) ([]byte, error) {
 	var valCopy []byte
 	err := db.DB.View(func(txn *badger.Txn) error {
 		item, err := txn.Get([]byte(key))
@@ -33,7 +33,7 @@ func (db *Database) Read(key string) ([]byte, error) {
 	return valCopy, err
 }
 
-func (db *Database) Write(key string, val []byte) error {
+func (db *Database) Write(key []byte, val []byte) error {
 	err := db.DB.Update(func(txn *badger.Txn) error {
 		err := txn.Set([]byte(key), val)
 		utils.HandleError(err)
