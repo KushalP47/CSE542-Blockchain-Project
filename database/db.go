@@ -10,7 +10,7 @@ type Database struct {
 }
 
 func (db *Database) InitDB(dir string) (*badger.DB, error) {
-	loc := "./tmp/" + dir
+	loc := "./database/tmp/" + dir
 	opts := badger.DefaultOptions(loc)
 	var err error
 	db.DB, err = badger.Open(opts)
