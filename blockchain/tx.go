@@ -7,4 +7,5 @@ type Transaction struct {
 	amount  uint64
 	data    []byte
 	v, r, s *big.Int
+	nonce   uint64
 }
