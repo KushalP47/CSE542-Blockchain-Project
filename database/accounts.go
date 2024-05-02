@@ -26,7 +26,7 @@ func ReadAccount(address []byte) blockchain.Account {
 		item, err := txn.Get(address)
 		utils.HandleError(err)
 		err = item.Value(func(val []byte) error {
-			account = blockchain.DeserializeAccount(val)
+			account, err = blockchain.DeserializeAccount(val)
 			return nil
 		})
 		return err
@@ -41,7 +41,8 @@ func WriteAccount(account blockchain.Account) error {
 	defer db.Close()
 
 	err = db.Update(func(txn *badger.Txn) error {
-		err := txn.Set(account.Address, blockchain.SerializeAccount(account))
+		serialized, _ := blockchain.SerializeAccount(account)
+		err := txn.Set([]byte(account.Address), serialized)
 		utils.HandleError(err)
 		return err
 	})
@@ -65,7 +66,7 @@ func GetLatestNonce() uint64 {
 		for it.Rewind(); it.Valid(); it.Next() {
 			item := it.Item()
 			err := item.Value(func(val []byte) error {
-				account := blockchain.DeserializeAccount(val)
+				account, _ := blockchain.DeserializeAccount(val)
 				if account.Nonce > latestNonce {
 					latestNonce = account.Nonce
 				}
