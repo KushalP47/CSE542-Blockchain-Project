@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
 	"github.com/KushalP47/CSE542-Blockchain-Project/database"
 )
 
@@ -20,8 +19,8 @@ func AddAccountHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Generate account
-	address := blockchain.GenerateAddress(req.Name)
-	account := blockchain.Account{
+	address := database.GenerateAddress(req.Name)
+	account := database.Account{
 		Name:    req.Name,
 		Balance: req.Balance,
 		Address: address,

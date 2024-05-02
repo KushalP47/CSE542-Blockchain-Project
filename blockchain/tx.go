@@ -2,10 +2,9 @@ package blockchain
 
 import "math/big"
 
-type Transaction struct {
-	to      [20]byte
-	amount  uint64
-	data    []byte
-	v, r, s *big.Int
+type Txn struct {
+	to      string
+	value   uint64
 	nonce   uint64
+	v, r, s *big.Int
 }

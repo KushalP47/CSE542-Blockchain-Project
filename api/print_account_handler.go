@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
+	"github.com/KushalP47/CSE542-Blockchain-Project/database"
 	"github.com/dgraph-io/badger"
 )
 
@@ -29,7 +29,7 @@ func PrintAccountHandler(w http.ResponseWriter, r *http.Request) {
 			item := iter.Item()
 
 			// Get the value (account) from the item
-			var account blockchain.Account
+			var account database.Account
 			err := item.Value(func(val []byte) error {
 				return json.Unmarshal(val, &account)
 			})
