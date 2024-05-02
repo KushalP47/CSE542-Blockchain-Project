@@ -4,7 +4,6 @@ import (
 	// "github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 
 	"github.com/KushalP47/CSE542-Blockchain-Project/pkg/utils"
@@ -15,20 +14,20 @@ import (
 // value: account
 
 type Account struct {
-	Address string
+	Address [20]byte
 	Name    string
 	Nonce   uint64
 	Balance uint64
 }
 
-func ReadAccount(address []byte) Account {
+func ReadAccount(address [20]byte) Account {
 	db, err := badger.Open(badger.DefaultOptions("./database/tmp/accounts"))
 	utils.HandleError(err)
 	defer db.Close()
 
 	var account Account
 	err = db.View(func(txn *badger.Txn) error {
-		item, err := txn.Get(address)
+		item, err := txn.Get(address[:])
 		utils.HandleError(err)
 		err = item.Value(func(val []byte) error {
 			account, err = DeserializeAccount(val)
@@ -47,7 +46,7 @@ func WriteAccount(account Account) error {
 
 	err = db.Update(func(txn *badger.Txn) error {
 		serialized, _ := SerializeAccount(account)
-		err := txn.Set([]byte(account.Address), serialized)
+		err := txn.Set(account.Address[:], serialized)
 		utils.HandleError(err)
 		return err
 	})
@@ -85,14 +84,14 @@ func GetLatestNonce() uint64 {
 	return latestNonce
 }
 
-func UpdateAccount(address []byte, account Account) error {
+func UpdateAccount(address [20]byte, account Account) error {
 	db, err := badger.Open(badger.DefaultOptions("./database/tmp/accounts"))
 	utils.HandleError(err)
 	defer db.Close()
 
 	err = db.Update(func(txn *badger.Txn) error {
 		serialized, _ := SerializeAccount(account)
-		err := txn.Set(address, serialized)
+		err := txn.Set(address[:], serialized)
 		utils.HandleError(err)
 		return err
 	})
@@ -115,7 +114,7 @@ func DeserializeAccount(data []byte) (Account, error) {
 	return account, nil
 }
 
-func GenerateAddress(name string) string {
+func GenerateAddress(name string) [20]byte {
 	// Generate a random salt
 	salt := make([]byte, 16)
 	if _, err := rand.Read(salt); err != nil {
@@ -129,5 +128,8 @@ func GenerateAddress(name string) string {
 	// Calculate SHA-256 hash
 	hash := sha256.Sum256(data)
 
-	return hex.EncodeToString(hash[:])
+	var address [20]byte
+	copy(address[:], hash[:20]) // Copy first 20 bytes of the hash to the address
+
+	return address
 }

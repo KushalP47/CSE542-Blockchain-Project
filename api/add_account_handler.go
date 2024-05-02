@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
 
@@ -36,7 +37,7 @@ func AddAccountHandler(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
 		Address string `json:"address"`
 	}{
-		Address: address,
+		Address: hex.EncodeToString(address[:]),
 	}
 	json.NewEncoder(w).Encode(resp)
 }
