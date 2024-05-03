@@ -45,3 +45,60 @@ func WriteAccount(key common.Address, value []byte) error {
 	utils.HandleError(err)
 	return err
 }
+
+// function to hash the hash of all account values
+func GetStateRoot() common.Hash {
+	// Get the state root
+	db, err := badger.Open(badger.DefaultOptions("./database/tmp/accounts"))
+	utils.HandleError(err)
+	defer db.Close()
+
+	var stateRoot []common.Hash
+	err = db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		it.Rewind()
+		for it.Valid() {
+			item := it.Item()
+			err := item.Value(func(val []byte) error {
+				stateRoot = append(stateRoot, common.BytesToHash(val))
+				return nil
+			})
+			utils.HandleError(err)
+			it.Next()
+		}
+		return nil
+	})
+	if err != nil {
+		utils.HandleError(err)
+	}
+
+	// hash the hash of all account values
+	// return common.BytesToHash(rlpHash(stateRoot))
+	rootHash := CalculateRootHash(stateRoot)
+	return rootHash
+}
+
+// Function to calculate the root hash using Hash List structure
+func CalculateRootHash(hashes []common.Hash) common.Hash {
+	// Iterate through the hashes and re-hash them to get the root hash
+	for len(hashes) > 1 {
+		var newHashes []common.Hash
+		for i := 0; i < len(hashes); i += 2 {
+			// Concatenate and hash pairs of hashes
+			if i+1 < len(hashes) {
+				combinedHash := append(hashes[i][:], hashes[i+1][:]...)
+				newHash := common.BytesToHash(combinedHash)
+				newHashes = append(newHashes, newHash)
+			} else {
+				// If there's an odd number of hashes, hash the last hash with itself
+				newHashes = append(newHashes, hashes[i])
+			}
+		}
+		hashes = newHashes
+	}
+	// Return the root hash
+	return hashes[0]
+}
