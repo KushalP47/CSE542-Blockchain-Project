@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -52,4 +53,68 @@ func CreateBlock() *Block {
 
 	return &block
 
+}
+
+func CreateGenesisBlock() *Block {
+	// Create a new block
+
+	minerAddress := os.Getenv("MINER_ADDRESS")
+	stateRoot := database.GetStateRoot()
+	header := Header{
+		ParentHash:       common.Hash{},
+		Miner:            common.HexToAddress(minerAddress),
+		StateRoot:        stateRoot,
+		TransactionsRoot: common.Hash{},
+		Number:           0,
+		Timestamp:        uint64(time.Now().Unix()),
+	}
+	header.ExtraData = SignHeader(header)
+
+	block := Block{
+		Header:       header,
+		Transactions: []SignedTx{},
+	}
+
+	return &block
+}
+
+func CheckIfGenesisBlockExists() bool {
+	// Check if the genesis block exists
+
+	_, _, err := database.LastBlock()
+	return err == nil
+}
+
+func AddBlock(block *Block) error {
+	// Add a block to the database
+
+	serializedBlock := SerializeBlock(block)
+	err := database.WriteBlock(block.Hash(), serializedBlock)
+	if err != nil {
+		return err
+	}
+
+	// write the block in blocks.txt
+	f, err := os.OpenFile("./database/tmp/blocks/blocks.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = fmt.Fprintf(f, "BlockHash: %s\n BlockParentHash: %s\n BlockMiner: %s\n BlockStateRoot: %s\n BlockTxnRoot: %s\n BlockNumber: %d\n BlockTimeStamp %d\n BlockExtraData: %s\n \n", block.Hash().String(), block.Header.ParentHash.String(), block.Header.Miner.String(), block.Header.StateRoot.String(), block.Header.TransactionsRoot.String(), block.Header.Number, block.Header.Timestamp, block.Header.ExtraData)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GetBlock(hash common.Hash) (*Block, error) {
+	// Get a block from the database
+
+	block, err := database.ReadBlock(hash[:])
+	if err != nil {
+		return nil, err
+	}
+	return DeserializeBlock(block), nil
 }

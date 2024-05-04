@@ -1,6 +1,9 @@
 package blockchain
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/KushalP47/CSE542-Blockchain-Project/database"
 	"github.com/KushalP47/CSE542-Blockchain-Project/pkg/utils"
 	"github.com/dgraph-io/badger"
@@ -75,10 +78,22 @@ func GetAccount(address common.Address) (Account, error) {
 
 // WriteAccount writes an account to the database
 func SetAccount(account Account) error {
+
 	bytesAccount, err := SerializeAccount(account)
 	utils.HandleError(err)
 	err = database.WriteAccount(account.Address, bytesAccount)
 	utils.HandleError(err)
+
+	f, err := os.OpenFile("./database/tmp/accounts/accounts.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = fmt.Fprintf(f, "Address: %s\n Balance: %d\n Nonce: %d\n \n \n", account.Address.String(), account.Balance, account.Nonce)
+	if err != nil {
+		return err
+	}
 	return err
 }
 

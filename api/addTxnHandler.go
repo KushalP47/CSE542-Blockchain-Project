@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
+	"github.com/KushalP47/CSE542-Blockchain-Project/database"
 	"github.com/ethereum/go-ethereum/common"
 )
 
@@ -94,6 +95,27 @@ func AddTxnHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	totalTxns, err := database.GetTxnCount()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if totalTxns == 5 {
+		var block *blockchain.Block
+		if blockchain.CheckIfGenesisBlockExists() {
+			block = blockchain.CreateBlock()
+		} else {
+			block = blockchain.CreateGenesisBlock()
+		}
+		err = blockchain.AddBlock(block)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 	}
 	w.WriteHeader(http.StatusOK)
 

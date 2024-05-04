@@ -88,3 +88,25 @@ func GetTxns() (map[common.Hash][]byte, error) {
 	}
 	return txns, err
 }
+
+func GetTxnCount() (int, error) {
+	db, err := badger.Open(badger.DefaultOptions("./database/tmp/transactions"))
+	utils.HandleError(err)
+	defer db.Close()
+
+	count := 0
+	err = db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			count++
+		}
+		return nil
+	})
+	if err != nil {
+		utils.HandleError(err)
+	}
+	return count, err
+}

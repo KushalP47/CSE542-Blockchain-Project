@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
 	"github.com/ethereum/go-ethereum/common"
@@ -36,19 +34,6 @@ func AddAccountHandler(w http.ResponseWriter, r *http.Request) {
 		Address: account.Address,
 		Nonce:   account.Nonce,
 		Balance: account.Balance,
-	}
-	// Append account details to file
-	f, err := os.OpenFile("database/tmp/accounts.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		http.Error(w, "Error opening file", http.StatusInternalServerError)
-		return
-	}
-	defer f.Close()
-
-	_, err = fmt.Fprintf(f, "ByteAddress: %s\n Address: %s\n Nonce: %d\n Balance: %d\n\n", account.Address, resp.Address, resp.Nonce, resp.Balance)
-	if err != nil {
-		http.Error(w, "Error writing to file", http.StatusInternalServerError)
-		return
 	}
 	json.NewEncoder(w).Encode(resp)
 }

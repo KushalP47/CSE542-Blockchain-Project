@@ -3,7 +3,9 @@ package blockchain
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"math/big"
+	"os"
 	"sync"
 
 	"github.com/KushalP47/CSE542-Blockchain-Project/database"
@@ -57,12 +59,26 @@ func VerifyTxn(sender common.Address, txn Txn) bool {
 }
 
 func AddTxn(signedTxn SignedTx) error {
+
 	txnHash := hashSigned(&signedTxn)
 	serializedTxn, err := SerializeTxn(signedTxn)
 	if err != nil {
 		panic(err)
 	}
 	err = database.WriteTxn(txnHash[:], serializedTxn)
+	if err != nil {
+		panic(err)
+	}
+	//  add the Txn in transactions.txt
+	f, err := os.OpenFile("./database/tmp/transactions/transactions.txt", os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+
+	// write the signed transaction to the file
+	_, err = fmt.Fprintf(f, "TxnHash: %s\n To: %s\n Value: %d\n Nonce: %d\n V: %d\n R: %d\n S: %d\n \n \n", txnHash.String(), signedTxn.To.String(), signedTxn.Value, signedTxn.Nonce, signedTxn.V, signedTxn.R, signedTxn.S)
+
 	return err
 }
 
