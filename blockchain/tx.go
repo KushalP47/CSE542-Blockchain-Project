@@ -58,17 +58,31 @@ func VerifyTxn(sender common.Address, txn Txn) bool {
 	return true
 }
 
-func AddTxn(signedTxn SignedTx) error {
+func AddTxn(txnNumber uint64, signedTxn SignedTx) error {
 
-	txnHash := hashSigned(&signedTxn)
+	// add the transaction data in the transactionsData
 	serializedTxn, err := SerializeTxn(signedTxn)
 	if err != nil {
 		panic(err)
 	}
-	err = database.WriteTxn(txnHash[:], serializedTxn)
+	err = database.WriteTxnData(txnNumber, serializedTxn)
 	if err != nil {
 		panic(err)
 	}
+
+	// add the transaction in the transactionsHash
+	txnHash := hashSigned(&signedTxn)
+	err = database.WriteTxnHash(txnHash, serializedTxn)
+	if err != nil {
+		panic(err)
+	}
+
+	// add the transaction in the transactionsNumber
+	err = database.WriteTxnNumber(txnHash, txnNumber)
+	if err != nil {
+		panic(err)
+	}
+
 	//  add the Txn in transactions.txt
 	f, err := os.OpenFile("./database/tmp/transactions/transactions.txt", os.O_APPEND|os.O_WRONLY, 0644)
 	if err != nil {
@@ -83,7 +97,7 @@ func AddTxn(signedTxn SignedTx) error {
 }
 
 func GetTxn(txnHash common.Hash) (SignedTx, error) {
-	serializedTxn, err := database.ReadTxn(txnHash[:])
+	serializedTxn, err := database.ReadTxnHash(txnHash)
 	if err != nil {
 		return SignedTx{}, err
 	}

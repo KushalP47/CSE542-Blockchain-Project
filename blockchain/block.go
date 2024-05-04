@@ -44,26 +44,17 @@ func SerializeBlock(b *Block) []byte {
 
 func GetBlockWithHash(blockHash common.Hash) (Block, error) {
 	// Get the block with the given hash
-	block, err := database.ReadBlock(blockHash[:])
+	block, err := database.ReadBlockHash(blockHash)
 	if err != nil {
 		return Block{}, err
 	}
 	return *DeserializeBlock(block), nil
 }
 
-func GetBlockWithNumber(blockNumber uint64) (common.Hash, *Block, error) {
-	// Get the block with the given number
-	blocksData, err := database.GetBlocksData()
-	if err != nil {
-		return common.Hash{}, nil, err
-	}
-	for _, blockData := range blocksData {
-		block := DeserializeBlock(blockData)
-		if block.Header.Number == blockNumber {
-			return block.Hash(), block, nil
-		}
-	}
-	return common.Hash{}, nil, nil
+func CheckifBlockHashExists(blockHash common.Hash) bool {
+	// Check if the block with the given hash exists
+	BlockExists := database.BlockExists(blockHash)
+	return BlockExists
 }
 
 func DeserializeBlock(serializedBlock []byte) *Block {
@@ -103,7 +94,6 @@ func SignHeader(h Header) []byte {
 	}
 
 	pvtKey := os.Getenv("MINER_PRIVATE_KEY")
-	fmt.Println("Private Key: ", pvtKey)
 	privateKey, err := crypto.HexToECDSA(pvtKey)
 	fmt.Println("Private Key: ", privateKey)
 	if err != nil {
@@ -151,7 +141,6 @@ func encodeHeader(w io.Writer, header *Header) {
 		header.ParentHash,
 		header.Miner,
 		header.Timestamp,
-		header.ExtraData,
 	}
 
 	err := rlp.Encode(w, enc)

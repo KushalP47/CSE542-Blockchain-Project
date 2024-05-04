@@ -46,6 +46,25 @@ func WriteAccount(key common.Address, value []byte) error {
 	return err
 }
 
+func AccountExists(key common.Address) bool {
+	db, err := badger.Open(badger.DefaultOptions("./database/tmp/accounts"))
+	utils.HandleError(err)
+	defer db.Close()
+
+	exists := false
+	err = db.View(func(txn *badger.Txn) error {
+		_, err := txn.Get(key[:])
+		if err == nil {
+			exists = true
+		}
+		return nil
+	})
+	if err != nil {
+		utils.HandleError(err)
+	}
+	return exists
+}
+
 // function to hash the hash of all account values
 func GetStateRoot() common.Hash {
 	// Get the state root

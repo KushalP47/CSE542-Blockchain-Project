@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/KushalP47/CSE542-Blockchain-Project/database"
 )
 
 func GetBlockWithNumberHandler(w http.ResponseWriter, r *http.Request) {
@@ -17,20 +17,22 @@ func GetBlockWithNumberHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	blockHash, block, err := blockchain.GetBlockWithNumber(req.BlockNumber)
-	if blockHash == (common.Hash{}) && block == nil && err == nil {
+	blockExists := database.CheckIfBlockExists(req.BlockNumber)
+	if !blockExists {
 		http.Error(w, "block not found", http.StatusNotFound)
 		return
-	} else if err != nil {
+	}
+
+	block, err := database.ReadBlock(req.BlockNumber)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	deserializedBlock := blockchain.DeserializeBlock(block)
 	resp := struct {
-		BlockHash common.Hash `json:"blockHash"`
-		Block     blockchain.Block
+		Block blockchain.Block
 	}{
-		BlockHash: blockHash,
-		Block:     *block,
+		Block: *deserializedBlock,
 	}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
