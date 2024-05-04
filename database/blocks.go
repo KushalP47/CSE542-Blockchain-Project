@@ -57,9 +57,9 @@ func LastBlock() (common.Hash, []byte, error) {
 		opts.Reverse = true
 		it := txn.NewIterator(opts)
 		defer it.Close()
-
-		it.Rewind()
-		if it.Valid() {
+		c := 0
+		// Position the iterator at the end of the database
+		for it.Seek([]byte{}); it.Valid(); it.Next() {
 			item := it.Item()
 			lastBlockHash = item.Key()
 			err := item.Value(func(val []byte) error {
@@ -69,6 +69,10 @@ func LastBlock() (common.Hash, []byte, error) {
 			if err != nil {
 				return err
 			}
+			c++
+			if c == 1 {
+				break
+			}
 		}
 		return nil
 	})
@@ -77,4 +81,64 @@ func LastBlock() (common.Hash, []byte, error) {
 	}
 
 	return common.Hash(lastBlockHash), lastBlock, err
+}
+func GetBlocksData() ([][]byte, error) {
+	// Get all the blocks from the database
+	db, err := badger.Open(badger.DefaultOptions("./database/tmp/blocks"))
+	utils.HandleError(err)
+	defer db.Close()
+
+	var blocks [][]byte
+	err = db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.Reverse = true
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			item := it.Item()
+			err := item.Value(func(val []byte) error {
+				// Append the entire val slice as a single element in blocks
+				blocks = append(blocks, val)
+				return nil
+			})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return blocks, nil
+}
+
+func CountBlocks() (uint64, error) {
+	// Count the number of blocks in the database
+	db, err := badger.Open(badger.DefaultOptions("./database/tmp/blocks"))
+	utils.HandleError(err)
+	defer db.Close()
+
+	count := uint64(0)
+	err = db.View(func(txn *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.Reverse = true
+		it := txn.NewIterator(opts)
+		defer it.Close()
+
+		for it.Rewind(); it.Valid(); it.Next() {
+			count++
+			if count == 1 {
+				break
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	return count, nil
 }

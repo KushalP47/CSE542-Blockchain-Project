@@ -93,7 +93,7 @@ func GetTxn(txnHash common.Hash) (SignedTx, error) {
 
 // rlpDecode decodes the RLP-encoded bytes and stores the result in the given interface.
 func RlpDecode(data []byte, val interface{}) error {
-	reader := bytes.NewReader(data)
+	reader := bytes.NewReader(data[:])
 	if err := rlp.Decode(reader, val); err != nil {
 		return err
 	}

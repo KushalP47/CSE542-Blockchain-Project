@@ -1,12 +1,16 @@
 package blockchain
 
 import (
+	"fmt"
 	"io"
+	"log"
 	"os"
 
+	"github.com/KushalP47/CSE542-Blockchain-Project/database"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/joho/godotenv"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -36,6 +40,30 @@ func SerializeBlock(b *Block) []byte {
 		panic(err)
 	}
 	return serializedBlock
+}
+
+func GetBlockWithHash(blockHash common.Hash) (Block, error) {
+	// Get the block with the given hash
+	block, err := database.ReadBlock(blockHash[:])
+	if err != nil {
+		return Block{}, err
+	}
+	return *DeserializeBlock(block), nil
+}
+
+func GetBlockWithNumber(blockNumber uint64) (common.Hash, *Block, error) {
+	// Get the block with the given number
+	blocksData, err := database.GetBlocksData()
+	if err != nil {
+		return common.Hash{}, nil, err
+	}
+	for _, blockData := range blocksData {
+		block := DeserializeBlock(blockData)
+		if block.Header.Number == blockNumber {
+			return block.Hash(), block, nil
+		}
+	}
+	return common.Hash{}, nil, nil
 }
 
 func DeserializeBlock(serializedBlock []byte) *Block {
@@ -69,7 +97,15 @@ func DeserializeHeader(serializedHeader []byte) *Header {
 
 func SignHeader(h Header) []byte {
 	// Sign the header
-	privateKey, err := crypto.HexToECDSA(os.Getenv("MINER_PRIVATE_KEY"))
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	pvtKey := os.Getenv("MINER_PRIVATE_KEY")
+	fmt.Println("Private Key: ", pvtKey)
+	privateKey, err := crypto.HexToECDSA(pvtKey)
+	fmt.Println("Private Key: ", privateKey)
 	if err != nil {
 		panic(err)
 	}
@@ -77,7 +113,14 @@ func SignHeader(h Header) []byte {
 	if err != nil {
 		panic(err)
 	}
-	return sig
+	fmt.Println("Signature: ", sig, "Length: ", len(sig))
+
+	signedBytes, err := rlp.EncodeToBytes(sig)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Signed Bytes: ", signedBytes, "Length: ", len(signedBytes))
+	return signedBytes
 }
 
 func VerifyHeaderSig(h Header, sig []byte) bool {
@@ -96,7 +139,7 @@ func SealHash(header *Header) (hash common.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 	encodeHeader(hasher, header)
 	hasher.Sum(hash[:0])
-
+	fmt.Println("Seal Hash: ", hash, "Length: ", len(hash))
 	return hash
 }
 
@@ -108,9 +151,13 @@ func encodeHeader(w io.Writer, header *Header) {
 		header.ParentHash,
 		header.Miner,
 		header.Timestamp,
+		header.ExtraData,
 	}
 
-	if err := rlp.Encode(w, enc); err != nil {
+	err := rlp.Encode(w, enc)
+	if err != nil {
 		panic("can't encode: " + err.Error())
+	} else {
+		fmt.Println("Encoded Header: ", enc)
 	}
 }

@@ -1,6 +1,7 @@
 package blockchain
 
 import (
+	"encoding/hex"
 	"fmt"
 	"os"
 	"time"
@@ -34,7 +35,9 @@ func CreateBlock() *Block {
 	minerAddress := os.Getenv("MINER_ADDRESS")
 	stateRoot := database.GetStateRoot()
 	transactionsRoot := database.CalculateRootHash(txnsHashes)
-	blockNumber := DeserializeBlock(lastBlock).Header.Number + 1
+	blockNumber := DeserializeBlock(lastBlock).Header.Number
+	blockNumber++
+	fmt.Println("Block Number: ", blockNumber)
 	time := time.Now().Unix()
 	header := Header{
 		ParentHash:       parentHash,
@@ -67,6 +70,7 @@ func CreateGenesisBlock() *Block {
 		TransactionsRoot: common.Hash{},
 		Number:           0,
 		Timestamp:        uint64(time.Now().Unix()),
+		ExtraData:        []byte(""),
 	}
 	header.ExtraData = SignHeader(header)
 
@@ -82,6 +86,7 @@ func CheckIfGenesisBlockExists() bool {
 	// Check if the genesis block exists
 
 	_, _, err := database.LastBlock()
+	fmt.Println(err)
 	return err == nil
 }
 
@@ -101,7 +106,7 @@ func AddBlock(block *Block) error {
 	}
 	defer f.Close()
 
-	_, err = fmt.Fprintf(f, "BlockHash: %s\n BlockParentHash: %s\n BlockMiner: %s\n BlockStateRoot: %s\n BlockTxnRoot: %s\n BlockNumber: %d\n BlockTimeStamp %d\n BlockExtraData: %s\n \n", block.Hash().String(), block.Header.ParentHash.String(), block.Header.Miner.String(), block.Header.StateRoot.String(), block.Header.TransactionsRoot.String(), block.Header.Number, block.Header.Timestamp, block.Header.ExtraData)
+	_, err = fmt.Fprintf(f, "BlockHash: %s\n BlockParentHash: %s\n BlockMiner: %s\n BlockStateRoot: %s\n BlockTxnRoot: %s\n BlockNumber: %d\n BlockTimeStamp %d\n BlockExtraData: %s\n \n", block.Hash().String(), block.Header.ParentHash.String(), block.Header.Miner.String(), block.Header.StateRoot.String(), block.Header.TransactionsRoot.String(), block.Header.Number, block.Header.Timestamp, hex.EncodeToString(block.Header.ExtraData))
 	if err != nil {
 		return err
 	}

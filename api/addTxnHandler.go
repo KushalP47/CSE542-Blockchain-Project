@@ -1,27 +1,35 @@
 package api
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
 	"github.com/KushalP47/CSE542-Blockchain-Project/database"
-	"github.com/ethereum/go-ethereum/common"
+	"github.com/KushalP47/CSE542-Blockchain-Project/pkg/utils"
 )
 
 // AddTxnHandler handles transaction requests
 func AddTxnHandler(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		SignedTxn common.Hash `json:"signed"`
+		SignedTxn string `json:"signed"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	// decode the signed transaction
+	fmt.Println(req.SignedTxn)
 	signedTxn := blockchain.SignedTx{}
-	if err := blockchain.RlpDecode(req.SignedTxn[:], &signedTxn); err != nil {
+	signedTxnHash, err := hex.DecodeString(req.SignedTxn)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = blockchain.RlpDecode(signedTxnHash, &signedTxn)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -102,18 +110,37 @@ func AddTxnHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	if totalTxns == 5 {
+	fmt.Println("Total Txns: ", totalTxns)
+	if totalTxns >= 5 {
 		var block *blockchain.Block
-		if blockchain.CheckIfGenesisBlockExists() {
+		count, err := database.CountBlocks()
+		utils.HandleError(err)
+		if count != 0 {
+			fmt.Println("Creating Block")
 			block = blockchain.CreateBlock()
+			err = blockchain.AddBlock(block)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			fmt.Printf("Block %d Created Successfully", block.Header.Number)
 		} else {
+			fmt.Println("Creating Genesis Block")
 			block = blockchain.CreateGenesisBlock()
-		}
-		err = blockchain.AddBlock(block)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+			fmt.Println("Genesis Block Created")
+			err = blockchain.AddBlock(block)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			fmt.Printf("Genesis Block Added Successfully")
+			block = blockchain.CreateBlock()
+			err = blockchain.AddBlock(block)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			fmt.Printf("Block %d Added Successfully", block.Header.Number)
 		}
 
 	}
