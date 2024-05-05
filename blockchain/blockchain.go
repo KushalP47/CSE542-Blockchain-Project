@@ -12,10 +12,11 @@ import (
 
 func CreateBlock(txns []SignedTx) *Block {
 
-	// check if genesis block exists
-	if !CheckIfGenesisBlockExists() {
-		return CreateGenesisBlock()
-	}
+	// // check if genesis block exists
+	// if !CheckIfGenesisBlockExists() {
+	// 	fmt.Println("Creating Genesis Block")
+	// 	return CreateGenesisBlock()
+	// }
 
 	// Validate the transactions
 	valid, err := ValidateTxns(txns)
@@ -71,17 +72,6 @@ func CreateBlock(txns []SignedTx) *Block {
 	return &block
 }
 
-// func ValidatePeersBlock(block *Block) (bool, error) {
-// 	// Validate the block header
-// 	// Validate the transactions
-// 	createdBlock := CreateBlock(block.Transactions)
-
-// 	if !valid {
-// 		return valid, err
-// 	}
-// 	return true, nil
-// }
-
 func CreateGenesisBlock() *Block {
 	// Create a new block
 
@@ -101,7 +91,7 @@ func CreateGenesisBlock() *Block {
 		Header:       header,
 		Transactions: []SignedTx{},
 	}
-
+	fmt.Println("Genesis Block Created")
 	return &block
 }
 

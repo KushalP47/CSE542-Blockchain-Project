@@ -68,6 +68,7 @@ func AddTxnHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		fmt.Println("Creating Block")
 		block := blockchain.CreateBlock(txns)
+		fmt.Println("Block Created")
 		err = blockchain.AddBlock(block)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)

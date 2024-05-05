@@ -20,6 +20,7 @@ func main() {
 	http.HandleFunc("/getBlockWithNumber", api.GetBlockWithNumberHandler)
 	// gives block details when block hash is given
 	http.HandleFunc("/getBlockWithHash", api.GetBlockWithHashHandler)
+	http.HandleFunc("/createGenesisBlock", api.CreateGenesisBlock)
 	// Start the HTTP server
 	log.Println("Server started on port 8000")
 	log.Fatal(http.ListenAndServe(":8000", nil))
