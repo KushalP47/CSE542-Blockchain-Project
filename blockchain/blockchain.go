@@ -16,6 +16,27 @@ func CreateBlock(txns []SignedTx) *Block {
 	if !CheckIfGenesisBlockExists() {
 		return CreateGenesisBlock()
 	}
+
+	// Validate the transactions
+	valid, err := ValidateTxns(txns)
+	if !valid {
+		panic(err)
+	}
+
+	// Execute the transactions
+	for _, txn := range txns {
+		err := ExecuteTxn(txn)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Delete the transactions
+	err = DeleteTransactions(txns)
+	if err != nil {
+		panic(err)
+	}
+
 	// Create a new block
 	var txnsHashes []common.Hash
 	for _, txn := range txns {
@@ -50,15 +71,16 @@ func CreateBlock(txns []SignedTx) *Block {
 	return &block
 }
 
-func ValidateBlock(block *Block) (bool, error) {
-	// Validate the block header
-	// Validate the transactions
-	valid, err := ValidateTxns(block.Transactions)
-	if !valid {
-		return valid, err
-	}
-	return true, nil
-}
+// func ValidatePeersBlock(block *Block) (bool, error) {
+// 	// Validate the block header
+// 	// Validate the transactions
+// 	createdBlock := CreateBlock(block.Transactions)
+
+// 	if !valid {
+// 		return valid, err
+// 	}
+// 	return true, nil
+// }
 
 func CreateGenesisBlock() *Block {
 	// Create a new block
@@ -209,32 +231,60 @@ func VerifySignedTxn(signedTxn SignedTx) bool {
 		return false
 	}
 
+	// verify if the nonce is correct
+	account, err := GetAccount(sender)
+	if err != nil {
+		return false
+	}
+	if account.Nonce != signedTxn.Nonce {
+		return false
+	}
+
+	return true
+
+}
+
+func ExecuteTxn(signedTxn SignedTx) error {
+
+	txn := Txn{
+		To:    signedTxn.To,
+		Value: signedTxn.Value,
+		Nonce: signedTxn.Nonce,
+	}
+
+	sender, err := GetSenderAddress(&txn, signedTxn.R, signedTxn.S, signedTxn.V, true)
+	if err != nil {
+		return err
+	}
+
 	// change the balance of the sender and receiver
 	// get the receiver's account
 	var receiverAccount Account
+
 	if !database.AccountExists(signedTxn.To) {
 		receiverAccount, err = CreateAccount(signedTxn.To, signedTxn.Value)
 		if err != nil {
-			return false
+			return err
 		}
 	} else {
 		receiverAccount, err = GetAccount(signedTxn.To)
 		if err != nil {
-			return false
+			return err
 		}
 		receiverAccount.Balance += signedTxn.Value
 		err = SetAccount(receiverAccount)
 		if err != nil {
-			return false
+			return err
 		}
 	}
 
 	// get the sender's account
 	senderAccount, err := GetAccount(sender)
 	if err != nil {
-		return false
+		return err
 	}
 	senderAccount.Balance -= signedTxn.Value
 	err = SetAccount(senderAccount)
-	return err == nil
+
+	return err
 }
