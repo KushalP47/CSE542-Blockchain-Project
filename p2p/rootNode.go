@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
+	"github.com/KushalP47/CSE542-Blockchain-Project/database"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/libp2p/go-libp2p/core/network"
 )
 
@@ -26,6 +29,45 @@ func StartRootNode(ctx context.Context) {
 		if msg.Want == uint(1) {
 			SendPONG(ctx, root, s.Conn().RemotePeer())
 		}
+	})
+
+	root.SetStreamHandler("/NewTransaction", func(s network.Stream) {
+		// fmt.Println("Received stream from:", s.Conn().RemotePeer())
+		msg, err := ReceiveMessage(s)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("Received Transaction from", s.Conn().RemotePeer())
+
+		// Deserialize the message
+		var txn blockchain.SignedTx
+		err = rlp.DecodeBytes(msg.Data, &txn)
+		if err != nil {
+			fmt.Println("Error deserializing message:", err)
+			return
+		}
+
+		// Verify the transaction
+		if !blockchain.VerifySignedTxn(txn) {
+			fmt.Println("Transaction verification failed")
+			return
+		}
+
+		// add Txn to the transactionsData
+		txnNumber, err := database.GetLastTxnKey()
+		if err != nil {
+			fmt.Println("Error getting last txn key:", err)
+			return
+		}
+		txnNumber++
+		err = blockchain.AddTxn(txnNumber, txn)
+		if err != nil {
+			fmt.Println("Error adding transaction:", err)
+			return
+		}
+
+		fmt.Println("Transaction added to the blockchain")
 	})
 
 	GetUpdatedPeerList := func() {
