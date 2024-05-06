@@ -210,16 +210,18 @@ func VerifySignedTxn(signedTxn SignedTx) bool {
 	if err != nil {
 		return false
 	}
+	fmt.Println("Sender Recovered: ", sender)
 
 	// verify if the sender exists
 	if !database.AccountExists(sender) {
 		return false
 	}
-
+	fmt.Println("Sender Exists in database")
 	// verify is the sender has enough balance
 	if !VerifyTxn(sender, txn) {
 		return false
 	}
+	fmt.Println("Sender has sufficient balance")
 
 	// verify if the nonce is correct
 	account, err := GetAccount(sender)
@@ -229,6 +231,7 @@ func VerifySignedTxn(signedTxn SignedTx) bool {
 	if account.Nonce != signedTxn.Nonce {
 		return false
 	}
+	fmt.Println("Nonce is correct")
 
 	return true
 

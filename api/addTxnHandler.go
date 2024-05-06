@@ -8,6 +8,7 @@ import (
 
 	"github.com/KushalP47/CSE542-Blockchain-Project/blockchain"
 	"github.com/KushalP47/CSE542-Blockchain-Project/database"
+	"github.com/KushalP47/CSE542-Blockchain-Project/p2p"
 	"github.com/KushalP47/CSE542-Blockchain-Project/pkg/utils"
 )
 
@@ -52,7 +53,12 @@ func AddTxnHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
+	serializedTxn, err := blockchain.SerializeTxn(signedTxn)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	p2p.SendSignedTransactionToPeer(serializedTxn)
 	totalTxns, err := database.GetTxnsData()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

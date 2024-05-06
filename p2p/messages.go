@@ -2,6 +2,7 @@ package p2p
 
 import (
 	"context"
+	"fmt"
 	"math/rand"
 
 	"github.com/libp2p/go-libp2p/core/host"
@@ -30,13 +31,29 @@ func SendPONG(ctx context.Context, host host.Host, peerID peer.ID) {
 	sendMessageWithCTX(ctx, host, peerID, msgPONG)
 }
 
-func SendSignedTransaction(signedTxn []byte) {
+// Message to send Signed Transaction
+func SendSignedTransactionToPeer(signedTxn []byte) {
 	for _, peer := range NODE.Network().Peers() {
-		msg := Message{
+		txnmsg := Message{
 			ID:   rand.Uint64(),
 			Code: uint(4),
 			Data: signedTxn,
 		}
-		sendMessageWithCTX(Ctxt, NODE, peer, msg)
+		serializedmsg, err := SerializeMessage(txnmsg)
+		if err != nil {
+			fmt.Println("Error serializing message:", err)
+			return
+		}
+		stream, err := NODE.NewStream(Ctxt, peer, "/NewTransaction")
+		if err != nil {
+			fmt.Println("Error opening stream to peer:", err)
+			return
+		}
+		defer stream.Close()
+
+		_, err = stream.Write(serializedmsg)
+		if err != nil {
+			fmt.Println("Error sending message:", err)
+		}
 	}
 }
