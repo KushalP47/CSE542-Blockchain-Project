@@ -34,7 +34,7 @@ func GetBlockWithHashHandler(w http.ResponseWriter, r *http.Request) {
 	resp := struct {
 		Block blockchain.Block
 	}{
-		Block: *deserializedBlock,
+		Block: deserializedBlock,
 	}
 	if err := json.NewEncoder(w).Encode(resp); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

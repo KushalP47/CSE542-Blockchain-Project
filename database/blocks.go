@@ -1,6 +1,8 @@
 package database
 
 import (
+	"fmt"
+
 	"github.com/KushalP47/CSE542-Blockchain-Project/pkg/utils"
 	"github.com/dgraph-io/badger"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,7 +30,7 @@ func ReadBlock(key uint64) ([]byte, error) {
 	if err == badger.ErrKeyNotFound {
 		return nil, nil
 	}
-
+	fmt.Printf("Block: %v\n", block)
 	return block, err
 }
 

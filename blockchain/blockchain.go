@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-func CreateBlock(txns []SignedTx) *Block {
+func CreateBlock(txns []SignedTx) Block {
 
 	// // check if genesis block exists
 	// if !CheckIfGenesisBlockExists() {
@@ -69,10 +69,10 @@ func CreateBlock(txns []SignedTx) *Block {
 		Transactions: txns,
 	}
 
-	return &block
+	return block
 }
 
-func CreateGenesisBlock() *Block {
+func CreateGenesisBlock() Block {
 	// Create a new block
 
 	minerAddress := os.Getenv("MINER_ADDRESS")
@@ -92,7 +92,7 @@ func CreateGenesisBlock() *Block {
 		Transactions: []SignedTx{},
 	}
 	fmt.Println("Genesis Block Created")
-	return &block
+	return block
 }
 
 func CheckIfGenesisBlockExists() bool {
@@ -103,11 +103,15 @@ func CheckIfGenesisBlockExists() bool {
 	return err == nil
 }
 
-func AddBlock(block *Block) error {
+func AddBlock(block Block) error {
 
 	// Add a block to the database
-	serializedBlock := SerializeBlock(block)
-	err := database.WriteBlock(block.Header.Number, serializedBlock)
+	serializedBlock, err := SerializeBlock(block)
+	if err != nil {
+		return err
+	}
+	fmt.Println("Block Serialized: ", serializedBlock)
+	err = database.WriteBlock(block.Header.Number, serializedBlock)
 	if err != nil {
 		return err
 	}
@@ -133,12 +137,12 @@ func AddBlock(block *Block) error {
 	return nil
 }
 
-func GetBlock(hash common.Hash) (*Block, error) {
+func GetBlock(hash common.Hash) (Block, error) {
 	// Get a block from the database
 
 	block, err := database.ReadBlockHash(hash)
 	if err != nil {
-		return nil, err
+		return Block{}, err
 	}
 	return DeserializeBlock(block), nil
 }

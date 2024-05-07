@@ -29,17 +29,28 @@ type Block struct {
 	Transactions []SignedTx
 }
 
-func (b *Block) Hash() common.Hash {
+func (b Block) Hash() common.Hash {
 	return rlpHash(b)
 }
 
-func SerializeBlock(b *Block) []byte {
+func SerializeBlock(b Block) ([]byte, error) {
 	// Serialize the block
 	serializedBlock, err := rlp.EncodeToBytes(b)
 	if err != nil {
+		return nil, err
+	}
+	return serializedBlock, err
+}
+
+func DeserializeBlock(serializedBlock []byte) Block {
+	// Deserialize the block
+	block := Block{}
+	err := rlp.DecodeBytes(serializedBlock, &block)
+	if err != nil {
+		fmt.Println("Error: ", err)
 		panic(err)
 	}
-	return serializedBlock
+	return block
 }
 
 func GetBlockWithHash(blockHash common.Hash) (Block, error) {
@@ -48,7 +59,7 @@ func GetBlockWithHash(blockHash common.Hash) (Block, error) {
 	if err != nil {
 		return Block{}, err
 	}
-	return *DeserializeBlock(block), nil
+	return DeserializeBlock(block), nil
 }
 
 func CheckifBlockHashExists(blockHash common.Hash) bool {
@@ -57,17 +68,7 @@ func CheckifBlockHashExists(blockHash common.Hash) bool {
 	return BlockExists
 }
 
-func DeserializeBlock(serializedBlock []byte) *Block {
-	// Deserialize the block
-	var block Block
-	err := rlp.DecodeBytes(serializedBlock, &block)
-	if err != nil {
-		panic(err)
-	}
-	return &block
-}
-
-func SerializeHeader(h *Header) []byte {
+func SerializeHeader(h Header) []byte {
 	// Serialize the header
 	serializedHeader, err := rlp.EncodeToBytes(h)
 	if err != nil {
@@ -76,14 +77,14 @@ func SerializeHeader(h *Header) []byte {
 	return serializedHeader
 }
 
-func DeserializeHeader(serializedHeader []byte) *Header {
+func DeserializeHeader(serializedHeader []byte) Header {
 	// Deserialize the header
-	var header Header
+	header := Header{}
 	err := rlp.DecodeBytes(serializedHeader, &header)
 	if err != nil {
 		panic(err)
 	}
-	return &header
+	return header
 }
 
 func SignHeader(h Header) []byte {
@@ -99,7 +100,7 @@ func SignHeader(h Header) []byte {
 	if err != nil {
 		panic(err)
 	}
-	sig, err := crypto.Sign(SealHash(&h).Bytes(), privateKey)
+	sig, err := crypto.Sign(SealHash(h).Bytes(), privateKey)
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +116,7 @@ func SignHeader(h Header) []byte {
 
 func VerifyHeaderSig(h Header, sig []byte) bool {
 	// Verify the signature of the header
-	pubKey, err := crypto.Ecrecover(SealHash(&h).Bytes(), sig)
+	pubKey, err := crypto.Ecrecover(SealHash(h).Bytes(), sig)
 	if err != nil {
 		panic(err)
 	}
@@ -125,7 +126,7 @@ func VerifyHeaderSig(h Header, sig []byte) bool {
 }
 
 // SealHash returns the hash of a block prior to it being sealed.
-func SealHash(header *Header) (hash common.Hash) {
+func SealHash(header Header) (hash common.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 	encodeHeader(hasher, header)
 	hasher.Sum(hash[:0])
@@ -133,7 +134,7 @@ func SealHash(header *Header) (hash common.Hash) {
 	return hash
 }
 
-func encodeHeader(w io.Writer, header *Header) {
+func encodeHeader(w io.Writer, header Header) {
 	enc := []interface{}{
 		header.Number,
 		header.StateRoot,
